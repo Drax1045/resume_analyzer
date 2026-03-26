@@ -22,7 +22,7 @@ const ResumeCard = ({
                     </h3>
                 </div>
 
-                <div className="flex-shrink-0">
+                <div className="flex-reshrink-0">
                     <ScoreCircle score={feedback.overallScore} />
                 </div>
             </div>
