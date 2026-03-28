@@ -2,23 +2,21 @@ import { type FormEvent, useState } from "react";
 import Navbar from "~/components/Navbar";
 import FileUploader from "~/components/FileUploader";
 import { usePuterStore } from "~/lib/puter";
-import {useNavigate} from "react-router";
-import {convertPdfToImage} from "~/lib/pdf2img";
-import {generateUUID} from "~/lib/utils";
-import path from "node:path";
-import {prepareInstructions} from "../../constants";
+import { useNavigate } from "react-router";
+import { convertPdfToImage } from "~/lib/pdf2img";
+import { generateUUID } from "~/lib/utils";
+import { prepareInstructions } from "../../constants";
 
 const Upload = () => {
-    const { auth,isLoading,fs,ai,kv } = usePuterStore();
+    const { auth, isLoading, fs, ai, kv } = usePuterStore();
     const navigate = useNavigate();
+
     const [isProcessing, setIsProcessing] = useState(false);
     const [statusText, setStatusText] = useState("");
     const [file, setFile] = useState<File | null>(null);
 
     const handleFileSelect = (file: File | null) => {
         setFile(file);
-
-
     };
 
     const handleAnalyze = async ({
@@ -32,55 +30,88 @@ const Upload = () => {
         jobDescription: string;
         file: File;
     }) => {
-        setIsProcessing(true);
-        setStatusText("Uploading the file...");
+        try {
+            setIsProcessing(true);
+            setStatusText("Uploading the file...");
 
-        const uploadedFile = await fs.upload([file]);
-        if (!uploadedFile) return setStatusText("Error : Failed to upload file");
+            // ✅ Upload PDF
+            const uploadedFile = await fs.upload([file]);
+            if (!uploadedFile) {
+                setStatusText("Error : Failed to upload file");
+                return;
+            }
 
-        setStatusText("Converting to image...");
-        const imageFile = await convertPdfToImage(file);
-        if (!imageFile.file) return setStatusText("Error : Failed to convert PDF to Image");
+            setStatusText("Converting to image...");
 
-        setStatusText("Uploading the Image...");
-        const uploadedImage = await fs.upload([imageFile.file]);
-        if (!uploadedImage) return setStatusText("Error : Failed to upload Image");
+            // ✅ Convert PDF → Image
+            const imageFile = await convertPdfToImage(file);
 
-        setStatusText("Preparing data...");
+            if (!imageFile || !imageFile.file) {
+                console.error("PDF to image failed:", imageFile);
+                setStatusText("Error : Failed to convert PDF to Image");
+                return;
+            }
 
-        const uuid = generateUUID();
-        const data = {
-            id: uuid,
-            resumePath: uploadedFile.path,
-            imagePath: uploadedImage.path,
-            companyName: companyName, jobTitle: jobTitle, jobDescription: jobDescription,
-            feedback: '',
+            setStatusText("Uploading the Image...");
+
+            // ✅ IMPORTANT FIX → Proper File object
+            const uploadedImage = await fs.upload([
+                new File([imageFile.file], "resume.png", { type: "image/png" })
+            ]);
+
+            if (!uploadedImage) {
+                setStatusText("Error : Failed to upload Image");
+                return;
+            }
+
+            setStatusText("Preparing data...");
+
+            const uuid = generateUUID();
+
+            const data = {
+                id: uuid,
+                resumePath: uploadedFile.path,
+                imagePath: uploadedImage?.path || "",
+                companyName: companyName,
+                jobTitle: jobTitle,
+                jobDescription: jobDescription,
+                feedback: "",
+            };
+
+            await kv.set(`resume:${uuid}`, JSON.stringify(data));
+
+            setStatusText("Analyzing...");
+
+            const feedback = await ai.feedback(
+                uploadedFile.path,
+                prepareInstructions({ jobTitle, jobDescription })
+            );
+
+            if (!feedback) {
+                setStatusText("Error : Failed to analyze resume");
+                return;
+            }
+
+            const feedbackText =
+                typeof feedback.message.content === "string"
+                    ? feedback.message.content
+                    : feedback.message.content[0].text;
+
+            data.feedback = JSON.parse(feedbackText);
+
+            await kv.set(`resume:${uuid}`, JSON.stringify(data));
+
+            setStatusText("Analysis Complete, redirecting...");
+
+            console.log("Saved Data:", data);
+            console.log("Uploaded Image:", uploadedImage);
+
+            navigate(`/resume/${uuid}`);
+
+        } catch (error) {
+            console.error("Error in handleAnalyze:", error);
+            setStatusText("Something went wrong!");
         }
-        await kv.set(`resume:${uuid}`, JSON.stringify(data));
-        setStatusText('Analyzing...');
-
-        const feedback = await ai.feedback(
-            uploadedFile.path,
-            prepareInstructions({jobTitle, jobDescription})
-        )
-        if (!feedback) return setStatusText("Error : Failed to analyze resume");
-
-        const feedbackText = typeof feedback.message.content === 'string'
-            ? feedback.message.content
-            : feedback.message.content[0].text;
-
-        data.feedback = JSON.parse(feedbackText);
-        await kv.set(`resume:${uuid}`, JSON.stringify(data));
-        setStatusText("Analysis Complete,redirecting...");
-        console.log(data);
-
-
-        console.log("Uploaded file:", uploadedFile);
-        console.log({
-            companyName,
-            jobTitle,
-            jobDescription,
-        });
     };
 
     const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
@@ -116,6 +147,7 @@ const Upload = () => {
                             <img
                                 src="/images/resume-scan.gif"
                                 className="w-full"
+                                alt="Processing"
                             />
                         </>
                     ) : (
@@ -166,15 +198,10 @@ const Upload = () => {
 
                             <div className="form-div">
                                 <label>Upload Resume</label>
-                                <FileUploader
-                                    onFileSelect={handleFileSelect}
-                                />
+                                <FileUploader onFileSelect={handleFileSelect} />
                             </div>
 
-                            <button
-                                className="primary-button"
-                                type="submit"
-                            >
+                            <button className="primary-button" type="submit">
                                 Analyze Resume
                             </button>
                         </form>

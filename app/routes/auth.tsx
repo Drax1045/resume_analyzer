@@ -4,7 +4,7 @@ import type { Route } from "./+types/auth";
 import { usePuterStore } from "~/lib/puter";
 
 export const meta = ({ }: Route.MetaArgs) => ([
-    { title: "Resumind | Auth" },
+    { title: "Runtime Resume | Auth" },
     { name: "description", content: "Log into your account" },
 ]);
 
