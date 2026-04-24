@@ -46,22 +46,27 @@ Whether you're a student landing your first internship or a fresh grad hunting f
 ## 📸 Screenshots
 
 <table>
-  <tr>
-    <td align="center"><b>🔑 Login Page</b></td>
-    <td align="center"><b>🏠 Home / Dashboard</b></td>
-  </tr>
-  <tr>
-    <td><img src="screenshots/img.png" alt="Login Page" width="400"/></td>
-    <td><img src="screenshots/img_1.png" alt="Dashboard" width="400"/></td>
-  </tr>
-  <tr>
-    <td align="center"><b>📤 Resume Upload</b></td>
-    <td align="center"><b>📈 Analysis Results</b></td>
-  </tr>
-  <tr>
-    <td><img src="screenshots/img_2.png" alt="Upload Page" width="400"/></td>
-    <td><img src="screenshots/result.png" alt="Results Page" width="400"/></td>
-  </tr>
+<table>
+<tr>
+<td align="center">
+<img src="screenshots/img.png" alt="Login Page" width="400"/>
+</td>
+
+<td align="center">
+<img src="screenshots/img_1.png" alt="Dashboard" width="400"/>
+</td>
+</tr>
+
+<tr>
+<td align="center">
+<img src="screenshots/img_2.png" alt="Upload Page" width="400"/>
+</td>
+
+<td align="center">
+<img src="screenshots/result.png" alt="Results Page" width="400"/>
+</td>
+</tr>
+</table>
 </table>
 
 
