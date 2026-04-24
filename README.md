@@ -64,7 +64,6 @@ Whether you're a student landing your first internship or a fresh grad hunting f
   </tr>
 </table>
 
-> 💡 Add your actual screenshots to a `/screenshots` folder in the repo root and update the paths above.
 
 ---
 
